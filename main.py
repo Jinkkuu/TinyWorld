@@ -13,7 +13,7 @@ from pygame.locals import*
 import pygame,os,time,sys,asyncio,concurrent.futures
 axe=0
 gamename='TinyWorld'
-gamever='2.1dev'
+gamever='2.5.0517.0015.dev'
 gameupdateurl='N/A'
 print('Starting Game...')
 upscale=1
@@ -37,6 +37,7 @@ green=0,255,0
 red=255,0,0
 voidcolor=0,0,0
 modsloaded=0
+istd=False
 texturepath='textures/'
 gamepath='Saves/'
 saves=[]
@@ -47,7 +48,7 @@ def mineblock(posx,posy):
 	for b in blockcolor:
 		if(posx,posy,b)in chunks:remove=_B;break
 		else:remove=_A
-	if remove:chunks.discard((posx,posy,b))
+	if remove:chunks.remove((posx,posy,b))
 def placeblock(posx,posy,block):
 	for b in blockcolor:
 		if not(posx,posy,b)in chunks:place=_B
@@ -179,7 +180,6 @@ def keyboard(title):
 		write(title[:50]+' [Characters Left:'+str(65-len(label))+']',(w//2-190,h//2-90),20,forepallete);pygame.display.flip()
 async def game():
 			global playersize,tmpsize,health,sight,sprint,up,down,left,right,minemode,placemode,playerpos,renderdistancex,renderdistancey,blockid,debugmode,x,y,chunks,aix,aiy,aiblock,collide,activity,chat_box_visible,walking,aitime,axe,aitrigger,aipot,crontime
-
 			if not "crontime" in globals():
 				crontime=time.time()
 			if time.time()-crontime>1:
@@ -222,15 +222,47 @@ async def game():
 			if sprint==1:movement=sprinting
 			elif sprint==2:movement=crouching
 			else:movement=walking
-			if up:y+=movement
-			if down:y-=movement
-			if left:x+=movement
-			if right:x-=movement
-			if minemode:mineblock(playerpos[0],playerpos[1])
-			if placemode:placeblock(playerpos[0],playerpos[1],blockcolor[blockid])
+			if up:
+				y+=movement
+			if down:
+				y-=movement
+			if left:
+				x+=movement
+			if right:
+				x-=movement
+			if minemode:
+				mineblock(playerpos[0],playerpos[1])
+			if placemode:
+				placeblock(playerpos[0],playerpos[1],blockcolor[blockid])
+			result = await load_chunks()
+			screen.blit(buffer, (0, 0))
+			ama,loaded,colorstep = result
+			pygame.draw.rect(screen,(255,0,0),pygame.Rect(playersize*(w//playersize//2-1),playersize*(h//playersize//2-1),playersize,playersize));pygame.draw.rect(screen,blockcolor[blockid],pygame.Rect(w//2-30,h-60,40,40));pygame.draw.rect(screen,(255,255,255),pygame.Rect(w//2-30,h-60,40,40),2)
+			loaded_count = ama
+			if istd:
+				controllerbutton=menu_draw((pygame.Rect(120,h-160,40,40),pygame.Rect(120,h-80,40,40),pygame.Rect(80,h-120,40,40),pygame.Rect(160,h-120,40,40),pygame.Rect(w-140,h-120,40,40),pygame.Rect(w-100,h-160,40,40),pygame.Rect(w-180,h-160,40,40),),('^','v','<','>','<o>','M','P',))
+			else:
+				controllerbutton=0
 			for event in pygame.event.get():
 				if event.type==pygame.QUIT:save();pygame.quit();sys.exit()
-				if event.type == pygame.MOUSEBUTTONDOWN:mouse_pos=pygame.mouse.get_pos()	
+				if event.type == pygame.MOUSEBUTTONDOWN:
+					if controllerbutton==1:
+						up=1	
+					if controllerbutton==2:
+						down=1	
+					if controllerbutton==3:
+						left=1	
+					if controllerbutton==4:
+						right=1	
+					if controllerbutton==5:
+						sight=(True if not sight else False)
+					if controllerbutton==6:
+						place=(True if not place else False)
+				if event.type == pygame.MOUSEBUTTONUP:
+					up=0
+					down=0
+					left=0
+					right=0
 				if event.type==pygame.KEYUP:
 					if event.key==pygame.K_LSHIFT:sprint=0
 					if event.key==pygame.K_z:sprint=0
@@ -278,11 +310,6 @@ async def game():
 					if event.key==pygame.K_z:sprint=2
 					if event.key==pygame.K_r:save();foodcount=0;chunks=[];x=0;y=0;aix=0;aiy=0;reload()
 #			loaded,colorstep=loadchunks()
-			result = await load_chunks()
-			screen.blit(buffer, (0, 0))
-			loaded,colorstep = result
-			pygame.draw.rect(screen,(255,0,0),pygame.Rect(playersize*(w//playersize//2-1),playersize*(h//playersize//2-1),playersize,playersize));pygame.draw.rect(screen,blockcolor[blockid],pygame.Rect(w//2-30,h-60,40,40));pygame.draw.rect(screen,(255,255,255),pygame.Rect(w//2-30,h-60,40,40),2)
-			loaded_count = len(loaded)
 			if debugmode:
 				dsize=10
 				write('('+str(int(x))+_E+str(int(y))+') '+str(len(chunks))+' Total Blocks ['+str(loaded_count)+' Loaded]', (20, 23), dsize, (255, 255, 255))
@@ -295,42 +322,37 @@ async def game():
 			pygame.draw.rect(screen, (255,255,255), pygame.Rect((playersize * playerpos[0] + playersize * x),playersize * playerpos[1] + playersize * y,playersize,playersize),2)
 def settingspage():
   global button,optimize,botmode,fullscreen,activity,screen
-  pygame.draw.rect(screen, (50,50,50), pygame.Rect(20,40,200,40),border_radius=20)
   write(gamename + ' - Settings', (40, 42), 60, (255, 255, 255))
-  pygame.draw.rect(screen, (10,10,10), pygame.Rect(20,60,w-40,h-80))
+  setbutton=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height+40), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-20), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-80), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-140), button_size_width, button_size_height),),('Optimize Mode: ' + ('Enabled' if optimize else 'Disabled'),'Builder Bots: ' + ('Enabled' if botmode else 'Disabled'),'Fullscreen: ' + ('Enabled' if fullscreen else 'Disabled'),'Main Menu'))
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
       pygame.quit()
       sys.exit()
-    if event.type == pygame.KEYDOWN:
-      if event.key == pygame.K_q:
-        pygame.quit()
-        sys.exit()
-      if event.key == pygame.K_DOWN:
-        button = (button % 4) + 1
-      if event.key == pygame.K_UP:
-        button = ((button-2) % 4)+1
-      if event.key == pygame.K_RETURN:
-        if button == 1:
+    if event.type == pygame.MOUSEBUTTONDOWN: 
+        if setbutton == 1:
           optimize = not optimize
-        elif button == 2:
+        elif setbutton == 2:
           botmode = not botmode
-        elif button == 3:
+        elif setbutton == 3:
           fullscreen = not fullscreen
           fullscreenchk()
           regen()
-        elif button == 4:
+        elif setbutton == 4:
           activity = 1
-          button=2
-  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 - 80, w - 40, 40))
-  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 - 20, w - 40, 40))
-  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 + 40, w - 40, 40))
-  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 + 100, w - 40, 40))
-  write('Optimize Mode: ' + ('Enabled' if optimize else 'Disabled'), (25, h // 2 - 68), 25, (255, 255, 255))
-  write('Builder Bots: ' + ('Enabled' if botmode else 'Disabled'), (25, h // 2 - 8), 25, (255, 255, 255))
-  write('Fullscreen: ' + ('Enabled' if fullscreen else 'Disabled'), (25, h // 2 + 52), 25, (255, 255, 255))
-  write('Exit Menu', (25, h // 2 + 110), 25, (255, 255, 255))
-  pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(20, h // 2 - 80 + 60 * (button - 1), w - 40, 40), 2)
+
+    if event.type == pygame.KEYDOWN:
+      if event.key == pygame.K_q:
+        pygame.quit()
+        sys.exit()  
+#  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 - 80, w - 40, 40))
+#  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 - 20, w - 40, 40))
+#  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 + 40, w - 40, 40))
+#  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 + 100, w - 40, 40))
+#  write('Optimize Mode: ' + ('Enabled' if optimize else 'Disabled'), (25, h // 2 - 68), 25, (255, 255, 255))
+#  write('Builder Bots: ' + ('Enabled' if botmode else 'Disabled'), (25, h // 2 - 8), 25, (255, 255, 255))
+#  write('Fullscreen: ' + ('Enabled' if fullscreen else 'Disabled'), (25, h // 2 + 52), 25, (255, 255, 255))
+#  write('Exit Menu', (25, h // 2 + 110), 25, (255, 255, 255))
+#  pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(20, h // 2 - 80 + 60 * (button - 1), w - 40, 40), 2)
 
 def write(text, pos, size, color):
     screen.blit(font.render(text, True, color), pos)
@@ -401,7 +423,7 @@ y=0
 select=False
 def save():
     global messagetime, message
-    f = open(gamepath+_G, _D)
+    f = open(gamepath+savename, _D)
     f.write(
         '(' + str(int(round(x))) + _E +
         str(int(round(y))) + _E +
@@ -423,11 +445,11 @@ def respawn():
 def reload():
 	global aix,aiy,aipos,foodcount,health,x,y,radius,playersize,foodpos,gamemode,aitrigger,collide,aitime,aipot,wmenu,chunks
 	x=0;y=0;aix=0;aiy=0;health=100;gamemode=gamemodes[0]
-	if os.path.isfile(gamepath+_G):
+	if os.path.isfile(gamepath+savename):
 		clear((0, 0, 0))
 		write('Preparing World...', (20, h // 2), 20, (255, 255, 255))
 		pygame.display.flip()
-		f = open(gamepath+_G, 'r').read().replace(_F, '').replace('+', ', ')
+		f = open(gamepath+savename, 'r').read().replace(_F, '').replace('+', ', ')
 		aipos = list(eval(f))
 		tmp = aipos[1:]
 		pos = aipos[0]
@@ -444,10 +466,10 @@ def reload():
 			chunks.append(c) 
 	t=time.time()+2;tok=0;xxx=time.time()+tok;fun=randint(1,len(messages))-1;fop=50
 appear=_A
-sight=_B
 targetmode=_A
 remove=_A
 place=_A
+selected_save=0
 aix=0
 aiy=0
 message=''
@@ -476,34 +498,35 @@ def gamesaves():
 	for a in saves[:4]:
 		tmp+=1
 		savespos.append(pygame.Rect((w - button_size_width) // 2,(55*tmp)+20, button_size_width, button_size_height))
-		savestext.append(a)
+		savestext.append(a.replace('.tw','').replace('_',' '))
 
 
 def fullscreenchk():
 	global w,h,screenw,screenh,screen,mmenu,button_size_width,wmenu,wtext,buffer,menuoverlay
 	if fullscreen:w=0;h=0
 	else:
-		w=int(640*upscale)*2
+		w=int(640*upscale)
 		h=int(480*upscale)
 	screenw=w
 	screenh=h
 	downscale=1
-	if fullscreen:screen=pygame.display.set_mode((0,0),pygame.FULLSCREEN,DOUBLEBUF);w=screen.get_width()//downscale;h=screen.get_height()//downscale;screenw=w;screenh=h
-	else:screen=pygame.display.set_mode((screenw,screenh),DOUBLEBUF,pygame.RESIZABLE)
+	flags=DOUBLEBUF|pygame.RESIZABLE|pygame.HWSURFACE
+	if fullscreen:screen=pygame.display.set_mode((0,0),pygame.FULLSCREEN|flags);w=screen.get_width()//downscale;h=screen.get_height()//downscale;screenw=w;screenh=h
+	else:screen=pygame.display.set_mode((screenw,screenh),flags)
 	button_size_width=w//2
 	buffer = pygame.Surface((screenw, screenh))
 	mmenu=pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height+40), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height-80), (button_size_width//2)-5, button_size_height),pygame.Rect(((w - button_size_width) // 2)+(button_size_width//2)+5, ((h - button_size_height) // 2)+(button_size_height-80), (button_size_width//2)-5, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-80), button_size_width, button_size_height)	
 	wmenu=pygame.Rect((w - (button_size_width) -4)//2, (h-button_size_height)-4, button_size_width//4, button_size_height),pygame.Rect((w - (button_size_width)+((button_size_width//2))+4)//2, (h-button_size_height)-4, button_size_width//4, button_size_height),pygame.Rect((w - (button_size_width)+((button_size_width//2)*2)+12)//2, (h-button_size_height)-4, button_size_width//4, button_size_height),pygame.Rect((w - (button_size_width)+((button_size_width//2)*3)+20)//2, (h-button_size_height)-4, button_size_width//4, button_size_height)
 	if w<768:
-		wtext='Create','Delete','Play','Exit'
+		wtext='Create','Delete','Warp!','Exit'
 	else:
-		wtext='Create World','Delete World','Play World','Exit'
+		wtext='Create World','Delete World','Warp! World','Exit'
 button_size_height=50
 button_selected=(170,170,170)
 button_idle=(150,150,150)
-mtext='Play Game','Settings','Online','Exit'
+mtext='Play Game','Settings','Buy Full Game','Exit'
 fullscreenchk()
-pygame.display.set_caption(gamename+' ('+str(gamever)+')')
+pygame.display.set_caption(gamename+' '+str(gamever))
 pygame.mouse.set_visible(True)
 screen.set_alpha(None)
 #w=640
@@ -525,6 +548,7 @@ x=True
 		  x=True"""
 splashsize=20
 hideblocks=False
+intense=5*9
 def shake(word,pos):
 	wording=word
 	write(wording, (pos[0]-randint(1,10), pos[1]-randint(1,10)), 60, (255, 0, 0))
@@ -533,21 +557,64 @@ def shake(word,pos):
 	write(wording, (pos[0]+randint(1,10), pos[1]+randint(1,10)), 60, (0, 0, 255))
 def debugmenu():
 	pygame.draw.rect(screen, (), rect)
+textbox_text=''
+textbox_active=True
 def createworld():
-	global activity, button
+	global activity, button,textbox_active,textbox_text,savename
 	floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+100), button_size_width, button_size_height),),text=('Create','Back'))
-	pygame.draw.rect(screen,(0,0,0),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height-60), button_size_width, button_size_height))
-	pygame.draw.rect(screen,(255,255,255),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height-60), button_size_width, button_size_height),2)
+	textbox_rect = pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2) + (button_size_height - 60),button_size_width, 60)
+	pygame.draw.rect(screen,(0,0,0),pygame.Rect(textbox_rect))
+	pygame.draw.rect(screen,(255,255,255),textbox_rect,2)
+	maxtext=32
+	if len(textbox_text)<maxtext:
+		colortext=255,255,255
+	else:
+		colortext=255,0,0
+	textofme=textbox_text
+	textbox_surface = font.render(textofme, True, colortext)
+	textbox_pos = textbox_rect.move(10, 50//2)
+	screen.blit(textbox_surface, textbox_pos)
+	for event in pygame.event.get():
+		if event.type == pygame.QUIT:
+			pygame.quit()
+			sys.exit()
+		if event.type == pygame.KEYDOWN:
+			if textbox_active:
+				if event.key == pygame.K_BACKSPACE:
+                    # Remove the last character when Backspace is pressed
+					textbox_text = textbox_text[:-1]
+				else:
+                    # Append the entered character to the textbox text
+					if not len(textbox_text)>maxtext-1:
+						textbox_text += event.unicode
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			if floorbuttons == 1:
+				savename=textbox_text.replace(' ','_')+'.tw'
+				reload()
+				activity=2
+				axe = time.time()
+				aitime = time.time()+aitimestep
+				
+			elif floorbuttons == 2:
+				activity=6
+def deleteworld():
+	global activity, button,selected_save
+	tmp = font.render('U wanna Delete '+str(savestext[selected_save-1])+'?', True, (255, 255, 255))
+	centertext = tmp.get_rect(center=pygame.Rect(0,((h - button_size_height) // 2)+(button_size_height-20),w,20).center)
+	screen.blit(tmp, centertext)
+	floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+100), button_size_width, button_size_height),),text=('Delete!','Nwooo'))
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			pygame.quit()
 			sys.exit()
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if floorbuttons == 1:
-				pass
+				os.remove(gamepath+str(savestext[selected_save-1].replace(' ','_')))
+				activity=6
+				gamesaves()
 			elif floorbuttons == 2:
 				activity=6
-def menu_draw(instruction,text=None,istextbox=False):
+def menu_draw(instruction,text=None,istextbox=False,selected_button=0):
 	button=0
 	if istextbox:
 		button_selected=0,0,0
@@ -570,7 +637,9 @@ def menu_draw(instruction,text=None,istextbox=False):
 			select=False
 
 		pygame.draw.rect(screen, (buttcolour), instruction[a-1])
-		if select:
+		if selected_button==a:
+			pygame.draw.rect(screen, (0,255,0), instruction[a-1],2)
+		elif select:
 			pygame.draw.rect(screen, (highlight), instruction[a-1],2)
 		else:
 			pygame.draw.rect(screen, (highlight_idle), instruction[a-1],2)	
@@ -580,11 +649,12 @@ def menu_draw(instruction,text=None,istextbox=False):
 			screen.blit(tmp, centertext)
 	return button
 def worldmenu():
-	global activity,button,axe,aitime
-	pygame.draw.rect(screen, (50,50,50), pygame.Rect(20,40,200,40),border_radius=20)
-	write(gamename + ' - Worlds', (40, 42), 60, (255, 255, 255))
-	pygame.draw.rect(screen, (10,10,10), pygame.Rect(20,60,w-40,h-120))
-	savebutton=menu_draw(savespos,text=savestext)
+	global activity,button,axe,aitime,selected_save,savename
+	pygame.draw.rect(screen, (50,50,50), pygame.Rect((w//4)-55,35,200,40),border_radius=20)
+	write(gamename + ' - Worlds', ((w//4)-40, 42), 60, (255, 255, 255))
+	pygame.draw.rect(screen, (10,10,10), pygame.Rect((w//4)-20,60,w-(w//2)+40,h-120))
+	pygame.draw.rect(screen, (255,255,255), pygame.Rect((w//4)-20,60,w-(w//2)+40,h-120),2)
+	savebutton=menu_draw(savespos,text=savestext,selected_button=selected_save)
 	worldbutton=menu_draw(wmenu,text=wtext)
 	if worldbutton==1:
 		if len(saves)>3:
@@ -592,33 +662,37 @@ def worldmenu():
 				write('Unfortunately, I cannot save any more changes as I have already hit the limit of 4 saves /o\\',(25,h-85),20,(255,255,0))
 			else:
 				write("I've reached the dreaded 4-save limit! ;n;",(25,h-85),20,(255,255,0))
-	shake('Press D to Continue',(40,100))
+	elif worldbutton==2 or worldbutton==3:
+		if selected_save==0:
+			write("No World Selected",(25,h-85),20,(255,255,0))
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			pygame.quit()
 			sys.exit()
 		if event.type == pygame.MOUSEBUTTONDOWN:
-			if worldbutton == 1:
+			if savebutton==0:
+				if worldbutton == 1:
 		#		reload()
 		#		axe = time.time()
 		#		aitime = time.time()+aitimestep
-				if len(saves)<4:
-					activity = 7
-			elif worldbutton == 2:
-				activity = 8
-			elif worldbutton == 3:
-				reload()
-				activity=2
-				axe = time.time()
-				aitime = time.time()+aitimestep
-			elif worldbutton == 4:
-				activity=1
+					if len(saves)<4:
+						activity = 7
+				elif worldbutton == 2:
+					if selected_save!=0:
+						activity = 8
+				elif worldbutton == 3:
+					if selected_save!=0:
+						savename=savestext[selected_save-1].replace(' ','_')+'.tw'
+						reload()
+						activity=2
+						axe = time.time()
+						aitime = time.time()+aitimestep
+				elif worldbutton == 4:
+					activity=1
+					selected_save=0
+			else:
+				selected_save=savebutton
 		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_d:
-				reload()
-				activity=2
-				axe = time.time()
-				aitime = time.time()+aitimestep
 			if event.key == pygame.K_q:
 				activity=1
 				button=0
@@ -633,8 +707,8 @@ def regen():
 		madeh=0
 #		maxh=(h//splashsize)+1
 #		maxw=(w//splashsize)+1
-		maxw=h//15
-		maxh=w//15
+		maxw=h//intense
+		maxh=w//intense
 		for b in range(1,maxh):
 			madeh+=1
 			if madeh>=max:
@@ -651,23 +725,28 @@ def regen():
 #10/randint(1,100)
 regen()
 blocksplashid=0
-async def blocksplash():
-	global blockmainmenu,blocksplashid
+border = 6
+speed = 1
+maxspeed = 3
+def blocksplash():
+	global blockmainmenu, blocksplashid,speed
+
 	if not hideblocks:
-		border=6
-		speed=1
-		maxspeed=3
-		for a in blockmainmenu:
-			if speed>maxspeed:
-				speed=2
+		block_rect = pygame.Rect(0, 0, splashsize + border, splashsize + border)
+		speed = min(speed + 1, maxspeed)
+		w_div_splashsize = w // splashsize - 1
+		inverse_speed=(1 / speed)
+		for i, a in enumerate(blockmainmenu):
+			if a[1] <= -25:
+				random_x = randint(1, w_div_splashsize * splashsize)
+				blockmainmenu[i] = (random_x, h + randint(100, h*2), a[2])
 			else:
-				speed+=1
-			if a[1]<=-25:
-				blockmainmenu[a[2]]=(randint(1,(w//splashsize-1)*splashsize),h+randint(100,h),a[2])
-			else:
-				blockmainmenu[a[2]]=(a[0],a[1]-(1/speed),a[2])
-			pygame.draw.rect(screen, (30,30,30), pygame.Rect(a[0]-(border//2), a[1]-(border//2), splashsize+border, splashsize+border))
-			pygame.draw.rect(screen, (50,50,50), pygame.Rect(a[0], a[1], splashsize, splashsize))
+				new_y = a[1] - inverse_speed
+				blockmainmenu[i] = (a[0], new_y, a[2])
+
+			block_rect.topleft = (a[0] - (border // 2), a[1] - (border // 2))
+			pygame.draw.rect(screen, (30, 30, 30), block_rect)
+			pygame.draw.rect(screen, (50, 50, 50), pygame.Rect(a[0], a[1], splashsize, splashsize))
 			#shake('Ha',(a[0],a[1]))
 def mainmenu():
 	global debugmode,activity,crazyness
@@ -733,7 +812,7 @@ async def main():
 		write('U can see me do you?', (10, h+2), 20, (255, 255, 255))
 		clear((20,20,20))
 		if activity==1 or activity==3 or activity==6:
-			await blocksplash()
+			blocksplash()
 		if activity == 0:
 			for a in range(1, 255):
 				screen.fill((numlimit(a, 255), numlimit(a, 255), numlimit(a, 255)))
@@ -791,6 +870,8 @@ async def main():
 			worldmenu()
 		elif activity == 7:
 			createworld()
+		elif activity == 8:
+			deleteworld()
 		elif activity == 4:
 			clear((0, 150, 150))
 			write(gamename+' Online (Register Page)', (40, 60), 60, (255, 255, 255))
@@ -846,15 +927,67 @@ def numlimit(cur,min):
 def playercheck():
     playerpos = -int(round(x)) + w // playersize // 2 - 1, -int(round(y)) + h // playersize // 2 - 1
     return playerpos
-	
+class Quadtree:
+    def __init__(self, bounds):
+        self.bounds = bounds
+        self.chunks = []
+        self.children = [None] * 4
+
+    def insert(self, chunk):
+        if not self._in_bounds(chunk):
+            return
+
+        if len(self.chunks) < 4:
+            self.chunks.append(chunk)
+        else:
+            if self.children[0] is None:
+                self._subdivide()
+            for child in self.children:
+                child.insert(chunk)
+
+    def query_range(self, xmin, xmax, ymin, ymax):
+        results = []
+        if not self._intersects_range(xmin, xmax, ymin, ymax):
+            return results
+
+        for chunk in self.chunks:
+            if xmin <= chunk[0] <= xmax and ymin <= chunk[1] <= ymax:
+                results.append(chunk)
+
+        if self.children[0] is not None:
+            for child in self.children:
+                results.extend(child.query_range(xmin, xmax, ymin, ymax))
+
+        return results
+
+    def _in_bounds(self, chunk):
+        x, y = chunk
+        xmin, ymin, xmax, ymax = self.bounds
+        return xmin <= x <= xmax and ymin <= y <= ymax
+
+    def _intersects_range(self, xmin, xmax, ymin, ymax):
+        xmin_bound, ymin_bound, xmax_bound, ymax_bound = self.bounds
+        return not (xmin > xmax_bound or xmax < xmin_bound or ymin > ymax_bound or ymax < ymin_bound)
+
+    def _subdivide(self):
+        xmin, ymin, xmax, ymax = self.bounds
+        xmid = (xmin + xmax) // 2
+        ymid = (ymin + ymax) // 2
+
+        self.children[0] = Quadtree((xmin, ymin, xmid, ymid))
+        self.children[1] = Quadtree((xmid, ymin, xmax, ymid))
+        self.children[2] = Quadtree((xmin, ymid, xmid, ymax))
+        self.children[3] = Quadtree((xmid, ymid, xmax, ymax))
+
 async def load_chunks():
 	colorstep = 0
+	ama=0
     # Create a list of visible chunks using a generator expression
 	xmin = playerpos[0] - renderdistancex
 	xmax = playerpos[0] + renderdistancex
 	ymin = playerpos[1] - renderdistancey
 	ymax = playerpos[1] + renderdistancey
-	loaded = [tmp for tmp in chunks if xmin <= tmp[0] <= xmax and ymin <= tmp[1] <= ymax]
+	loaded = (tmp for tmp in chunks if xmin <= tmp[0] <= xmax and ymin <= tmp[1] <= ymax)
 	# This is for Temporary Chunks (Not loaded to "Real" Chunks)
 	if sight:
 		buffer.fill((0,100,0))
@@ -862,9 +995,10 @@ async def load_chunks():
 		buffer.fill((0,150,0))
 	# Iterate over visible chunks and draw them
 	for b in loaded:	
+		ama+=1
 		chunk_x = playersize * b[0] + playersize * x
 		chunk_y = playersize * b[1] + playersize * y
-		rect = pygame.Rect(chunk_x, chunk_y, playersize + 1, playersize + 1)
+		rect = pygame.Rect(chunk_x, chunk_y, playersize + 1, playersize//1.2 + 1)
 		if sight == _A:
 			pygame.draw.rect(buffer, b[2], rect)
 		else:
@@ -876,7 +1010,7 @@ async def load_chunks():
 			pygame.draw.rect(screen, (255, 255, 255), aipot_rect, 2)
         # Yield control to the event loop to maintain smooth FPS
 	await asyncio.sleep(0)
-	return loaded, colorstep
+	return ama,loaded, colorstep
 chat_messages = []
 chat_box_width, chat_box_height = 600, 200
 chat_box_x = (screenw - chat_box_width) // 2
