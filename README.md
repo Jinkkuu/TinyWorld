@@ -1,5 +1,5 @@
 # TinyWorld v2.5Dev
-Old TinyWorld Code Base from 2022 that will be replaced
+This is the Upcoming Release of TinyWorld
 
 ## Goals:
 - [ ] Fully Remove the Old Code Base
@@ -8,4 +8,4 @@ Old TinyWorld Code Base from 2022 that will be replaced
 - [X] Allow More than 1 World (Having a World Menu)
 - [ ] Published 
 
-Right Now TinyWorld will be able to run smoothly on mostly any device (iOS, Android, Windows, Linux, BSD, and also Mac OS?)
+Right Now TinyWorld should be able to run smoothly on mostly any device (iOS, Android, Windows, Linux, BSD, and also Mac OS?)
