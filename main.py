@@ -4,7 +4,7 @@ import pygame,os,time,sys,asyncio,concurrent.futures,threading
 nline='\n'
 axe=0
 gamename='TinyWorld'
-gamever='2.5.0816.0.dev'
+gamever='2.5.0816.1.dev'
 gameupdateurl='N/A'
 gameauthor='Pxki Games'
 print('Starting Game...')
@@ -376,7 +376,7 @@ def game():
 			pygame.draw.rect(screen, (255,255,255), pygame.Rect((playersize * playerpos[0] + playersize * x),playersize * playerpos[1] + playersize * y,playersize,playersize),2)
 			write('Note: This will be changed Later',(30,h-40),0,(255,255,255))
 def settingspage():
-  global button,optimize,botmode,fullscreen,activity,screen,firstcom
+  global button,optimize,botmode,fullscreen,activity,screen,firstcom	
   write(gamename + ' - Settings', (40, 42), 60, (255, 255, 255))
   setbutton=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height+40), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-20), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-80), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-140), button_size_width, button_size_height),),('Optimize Mode: ' + ('Enabled' if optimize else 'Disabled'),'Builder Bots: ' + ('Enabled' if botmode else 'Disabled'),'Fullscreen: ' + ('Enabled' if fullscreen else 'Disabled'),'Main Menu'))
   for event in pygame.event.get():
@@ -1108,7 +1108,7 @@ def load_chunks():
 		ama+=1
 		chunk_x = playersize * b[0] + playersize * x
 		chunk_y = playersize * b[1] + playersize * y
-		rect = pygame.Rect(chunk_x, chunk_y, playersize + 1, playersize//1.2 + 1)
+		rect = pygame.Rect(chunk_x, chunk_y, playersize + 1, playersize + 1)
 		if sight == False:
 			pygame.draw.rect(buffer, b[2], rect)
 		else:
