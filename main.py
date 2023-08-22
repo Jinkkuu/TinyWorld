@@ -1,15 +1,15 @@
 #!/usr/bin/python3
-from random import randint
-import pygame,os,time,sys,threading
+import random
+import pygame,os,time,sys,threading,urllib.request
 nline='\n'
 axe=0
 gamename='TinyWorld'
-gamever='2.5.0818.0.dev'
+gamever='2.5.0821.0.dev'
 gameupdateurl='N/A'
 gameauthor='Pxki Games'
 print('Starting Game...')
 upscale=1
-limitfps=1000
+limitfps=60
 maxmem=1024*1024
 sfps=0
 debugmode=True
@@ -26,6 +26,8 @@ aix=0
 aiy=0
 health=100
 gamemode='not in use'
+stop=0
+worldtype=0
 def music():
 	A='music.mp3'
 	global musictime
@@ -47,7 +49,9 @@ istd=False
 texturepath='textures/'
 gamepath='saves/'
 saves=[]
-savename=str(randint(11111,12345))+'.tw'
+savename=str(random.randint(11111,12345))+'.tw'
+netqueue=''
+netresult=''
 print('Setting Language...')
 lang='en'
 print('Set Lang to '+lang)
@@ -62,6 +66,10 @@ if not os.path.isdir(gamepath):
 	os.mkdir(gamepath)
 if not os.path.isdir('mods'):
 	os.mkdir('mods')
+def stopnow():
+	global stop
+	stop=1
+	exit()
 def mineblock(posx,posy):
 	for b in blockcolor:
 		if(posx,posy,b)in chunks:remove=True;break
@@ -79,7 +87,7 @@ def placeblock(posx,posy,block):
 def memspace():
   if len(str(globals())) >= maxmem:
     print('Memory Overload !\nThis will be sent to the Developer! :)')
-    exit()
+    stopnow()
   else:
     return len(str(globals()))
 def cbytes(size):
@@ -164,7 +172,7 @@ def game():
 			else:
 				controllerbutton=0
 			for event in pygame.event.get():
-				if event.type==pygame.QUIT:save();pygame.quit();sys.exit()
+				if event.type==pygame.QUIT:save();pygame.quit();sys.stopnow()
 				if event.type == pygame.MOUSEBUTTONDOWN:
 					if controllerbutton==1:
 						up=1	
@@ -274,11 +282,13 @@ def game():
 			render('text',text='Note: This will be changed Later',arg=((30,h-40),forepallete))
 def settingspage():
   global button,optimize,botmode,fullscreen,activity,screen,firstcom	
+  render('header')
+  render('rect',arg=((-5,titlepos[1]+40,w+10,h-120),(0,0,0),True),bordercolor=forepallete)
   render('text',text=gamename + ' - '+langpack[21],arg=(titlepos,forepallete))
-  setbutton=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height+40), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-20), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-80), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-140), button_size_width, button_size_height),),((langpack[22] if optimize else langpack[23])+' '+langpack[24],(langpack[22] if botmode else langpack[23])+' '+langpack[25],(langpack[22] if fullscreen else langpack[23]) + ' '+langpack[26],'<--'))
+  setbutton=menu_draw((pygame.Rect(titlepos[0], titlepos[1]+55, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+100, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+145, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+190, 220, button_size_height//1.5),pygame.Rect(10, h-45, w-20, button_size_height/1.5),),((langpack[22] if optimize else langpack[23])+' '+langpack[24],(langpack[22] if botmode else langpack[23])+' '+langpack[25],(langpack[22] if fullscreen else langpack[23]) + ' '+langpack[26],'Notification Test','<--'))
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
-      exit()
+      stopnow()
     if event.type == pygame.MOUSEBUTTONDOWN: 
         if setbutton == 1:
           optimize = not optimize
@@ -289,6 +299,10 @@ def settingspage():
           firstcom=False
           regen()
         elif setbutton == 4:
+          global messagetime,message
+          messagetime = time.time() + 5
+          message='this is a test'
+        elif setbutton == 5:
           activity = 1
 
     if event.type == pygame.KEYDOWN:
@@ -323,6 +337,7 @@ def pause(ms):
 		fpstime=time.time()
 	else:
 		fpstmp+=1*quickness
+	clock.tick(limitfps)
 pygame.init()
 font = pygame.font.SysFont(None, 24)
 clock=pygame.time.Clock()
@@ -377,7 +392,8 @@ def save():
         str(aix) + ',' +
         str(aiy) + ',' +
         str(aitrigger) + ',' +
-        str(collide) +
+        str(collide) + ',' +
+        str(worldtype) +
         '), ' +
         str(chunks).replace('[', '').replace(']', '')
     )
@@ -388,9 +404,9 @@ def save():
     message = 'Saved World'
 sight=False
 def respawn():
-	for a in range(1,1000):place=False;pos=randint(1,x+100)//2,randint(1,y+100)//2;foodpos.append((pos[0],pos[1],randint(1,2)))
+	for a in range(1,1000):place=False;pos=random.randint(1,x+100)//2,random.randint(1,y+100)//2;foodpos.append((pos[0],pos[1],random.randint(1,2)))
 def reload():
-	global aix,aiy,aipos,foodcount,health,x,y,radius,playersize,foodpos,gamemode,aitrigger,collide,aitime,aipot,wmenu,chunks
+	global aix,aiy,aipos,foodcount,health,worldtype,seed,x,y,radius,playersize,foodpos,gamemode,aitrigger,collide,aitime,aipot,wmenu,chunks
 	x=0;y=0;aix=0;aiy=0;health=100;gamemode=gamemodes[0]
 	if os.path.isfile(gamepath+savename):
 		clear((0, 0, 0))
@@ -408,11 +424,19 @@ def reload():
 		aiy = pos[5]
 		aitrigger = pos[6]
 		collide = pos[7]
+		try:
+			worldtype=pos[8]
+		except Exception:
+			worldtype=0
+		try:
+			seed=pos[9]
+		except Exception:
+			seed=0
 		chunks=[]
 		for c in tmp:
 			chunks.append(c) 
 			
-	t=time.time()+2;tok=0;xxx=time.time()+tok;fun=randint(1,len(messages))-1;fop=50
+	t=time.time()+2;tok=0;xxx=time.time()+tok;fun=random.randint(1,len(messages))-1;fop=50
 appear=False
 targetmode=False
 remove=False
@@ -485,7 +509,7 @@ def fullscreenchk():
 	screenh=h
 	button_size_width=w//2
 	buffer = pygame.Surface((screenw, screenh))
-	mmenu=pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height+40), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height-80), (button_size_width//2)-5, button_size_height),pygame.Rect(((w - button_size_width) // 2)+(button_size_width//2)+5, ((h - button_size_height) // 2)+(button_size_height-80), (button_size_width//2)-5, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-80), button_size_width, button_size_height)	
+	mmenu=pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height+40), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height-80), (button_size_width//2)-5, button_size_height),pygame.Rect(((w - button_size_width) // 2)+(button_size_width//2)+5, ((h - button_size_height) // 2)+(button_size_height-80), (button_size_width//2)-5, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)-(button_size_height-80), button_size_width, button_size_height),pygame.Rect(-10,h-50, 200,50)
 	wmenu=pygame.Rect((w - (button_size_width) -4)//2, (h-button_size_height)-4, button_size_width//4, button_size_height),pygame.Rect((w - (button_size_width)+((button_size_width//2))+4)//2, (h-button_size_height)-4, button_size_width//4, button_size_height),pygame.Rect((w - (button_size_width)+((button_size_width//2)*2)+12)//2, (h-button_size_height)-4, button_size_width//4, button_size_height),pygame.Rect((w - (button_size_width)+((button_size_width//2)*3)+20)//2, (h-button_size_height)-4, button_size_width//4, button_size_height)
 	if w<768:
 		wtext=langpack[31],langpack[32],langpack[33],langpack[30]
@@ -494,7 +518,7 @@ def fullscreenchk():
 button_size_height=50
 button_selected=(170,170,170)
 button_idle=(150,150,150)
-mtext=langpack[27],langpack[28],langpack[29],langpack[30]
+mtext=langpack[27],langpack[28],langpack[29],langpack[30],langpack[36]
 todo=[('Progress of Menu (Except Game)','60%'),('Progress of Game Interface','0%')]
 fullscreenchk()
 pygame.display.set_caption(gamename+' '+str(gamever))
@@ -517,17 +541,19 @@ intense=5*9
 titlepos=20, 30
 #def shake(word,pos):
 #	wording=word
-#	write(wording, (pos[0]-randint(1,10), pos[1]-randint(1,10)), 60, (255, 0, 0))
-#	write(wording, (pos[0]-randint(1,10), pos[1]-randint(1,10)), 60, (0, 255, 0))
-#	write(wording, (pos[0]-randint(1,10), pos[1]-randint(1,10)), 60, (255, 255, 255))
-#	write(wording, (pos[0]+randint(1,10), pos[1]+randint(1,10)), 60, (0, 0, 255))
+#	write(wording, (pos[0]-random.randint(1,10), pos[1]-random.randint(1,10)), 60, (255, 0, 0))
+#	write(wording, (pos[0]-random.randint(1,10), pos[1]-random.randint(1,10)), 60, (0, 255, 0))
+#	write(wording, (pos[0]-random.randint(1,10), pos[1]-random.randint(1,10)), 60, (255, 255, 255))
+#	write(wording, (pos[0]+random.randint(1,10), pos[1]+random.randint(1,10)), 60, (0, 0, 255))
 #def debugmenu():
 #	pygame.draw.rect(screen, (), rect)
 textbox_text=''
 textbox_active=True
 def createworld():
-	global activity, button,textbox_active,textbox_text,savename
-	floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+100), button_size_width, button_size_height),),text=('Create','Back'))
+	global activity, button,textbox_active,textbox_text,savename,worldtype
+	render('header')
+	render('text',text=langpack[31]+' '+langpack[34],arg=(titlepos,forepallete))
+	floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+100), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+100), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+40), button_size_width, button_size_height),),text=(langpack[31],langpack[40],langpack[37]+' '+(langpack[38] if worldtype==0 else langpack[39])))
 	textbox_rect = pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2) + (button_size_height - 60),button_size_width, 60)
 	pygame.draw.rect(screen,(0,0,0),pygame.Rect(textbox_rect))
 	pygame.draw.rect(screen,forepallete,textbox_rect,2)
@@ -542,7 +568,7 @@ def createworld():
 	screen.blit(textbox_surface, textbox_pos)
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			exit()
+			stopnow()
 		if event.type == pygame.KEYDOWN:
 			if event.key == pygame.K_ESCAPE:
 				activity = 1
@@ -564,6 +590,11 @@ def createworld():
 				
 			elif floorbuttons == 2:
 				activity=6
+			elif floorbuttons == 3:
+				if worldtype>=1:
+					worldtype=0
+				else:
+					worldtype+=1
 def deleteworld():
 	global activity, button,selected_save
 	tmp = font.render(langpack[40]+' '+str(savestext[selected_save-1])+'?', True, (255, 255, 255))
@@ -573,7 +604,7 @@ def deleteworld():
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			pygame.quit()
-			sys.exit()
+			sys.stopnow()
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if floorbuttons == 1:
 				os.remove(gamepath+str(savestext[selected_save-1].replace(' ','_')))
@@ -619,7 +650,7 @@ def worldmenu():
 	global activity,button,axe,aitime,selected_save,savename
 	gamesaves()
 	#(w//4)-55,35,200,40
-	pygame.draw.rect(screen, (50,50,50), pygame.Rect(0,-40,w,100),border_radius=20)
+	render('header')
 	render('text',text=gamename + ' '+langpack[18],arg=(titlepos,forepallete))
 	pygame.draw.rect(screen, (10,10,10), pygame.Rect((w//4)-20,60,w-(w//2)+40,h-120))
 	pygame.draw.rect(screen, forepallete, pygame.Rect((w//4)-20,60,w-(w//2)+40,h-120),2)
@@ -636,7 +667,7 @@ def worldmenu():
 			render('text',text=langpack[17],arg=((25,h-85),(255,255,0)))
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			exit()
+			stopnow()
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if savebutton==0:
 				if worldbutton == 1:
@@ -685,12 +716,12 @@ def regen():
 				madew+=1
 				if madew>=max:
 					break
-				if randint(1,2)==2:
+				if random.randint(1,2)==2:
 					#(a-1)*splashsize,(b-1)*splashsize
 					blockmainmenu.append((-100,-100,tmp))
 					tmp+=1
 		blocklen=len(blockmainmenu)
-#10/randint(1,100)
+#10/random.randint(1,100)
 regen()
 blocksplashid=0
 border = 6
@@ -706,8 +737,8 @@ def blocksplash():
 		inverse_speed=(1 / speed)
 		for i, a in enumerate(blockmainmenu):
 			if a[1] <= -25:
-				random_x = randint(1, w_div_splashsize * splashsize)
-				blockmainmenu[i] = (random_x, h + randint(100, h), a[2])
+				random_x = random.randint(1, w_div_splashsize * splashsize)
+				blockmainmenu[i] = (random_x, h + random.randint(100, h), a[2])
 			else:
 				new_y = a[1] - inverse_speed
 				blockmainmenu[i] = (a[0], new_y, a[2])
@@ -721,30 +752,28 @@ def mainmenu():
 	menubutton=menu_draw(mmenu,text=mtext)
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			exit()
+			stopnow()
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if menubutton == 1:
-#		reload()
-#		axe = time.time()
-#		aitime = time.time()+aitimestep
 				activity = 6
 			elif menubutton == 2:
 				activity = 3
-			elif menubutton == 3:
+			elif menubutton == 5:
 				activity = 9
-				#activity = 4
+			elif menubutton == 3:
+				activity = 4
 			elif menubutton == 4:
-				exit()
+				stopnow()
 		if event.type == pygame.KEYDOWN:
 			if event.key == pygame.K_F5:
 				if debugmode:
 					debugmode = False
 				else:
 					debugmode = True
-#			if event.key == pygame.K_l:
-#				crazyness+=1
+			if event.key == pygame.K_l:
+				crazyness+=1
 			if event.key == pygame.K_q or event.key == pygame.K_ESCAPE:
-				exit()
+				stopnow()
 #			if event.key == pygame.K_DOWN:
 #				if button > 3:
 #					button = 1
@@ -760,6 +789,7 @@ def mainmenu():
 #	for a in range(1,crazyness+2):
 #		shake(gamename,(40+(a*5),60+(a*5)))
 	render('text',text=gamename,arg=(titlepos,forepallete))
+	#render('text',text='BUTTON:'+str(menubutton),arg=((titlepos[0],titlepos[1]+30),forepallete))
 	if crazyness<4:
 		if crazyness>0:
 			render('text',text=langpack[0],arg=((10,h-40),forepallete))
@@ -773,12 +803,13 @@ def mainmenu():
 	elif crazyness<61:
 		crash(langpack[4])
 def onlinemode():
+	global activity
 	render('text',text=gamename+' '+langpack[5],arg=(titlepos,forepallete))
 	pygame.draw.rect(screen, forepallete, pygame.Rect(40,80,w-80,h-160))
-	render('text',text=langpack[6],arg=((45,85),forepallete))
+	render('text',text=netcall('http://10.1.52.1'),arg=((45,85),(0,0,0)))
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			exit()
+			stopnow()
 		if event.type == pygame.KEYDOWN:
 			if event.key == pygame.K_q:
 				activity = 1
@@ -806,7 +837,7 @@ def progressmenu():
 		tmp+=1
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			exit()
+			stopnow()
 		if event.type == pygame.KEYDOWN:
 			if event.key == pygame.K_q:
 				activity = 1
@@ -827,20 +858,35 @@ def tutorial():
 		if event.type == pygame.QUIT:
 			save()
 			pygame.quit()
-			sys.exit()
+			sys.stopnow()
 		if event.type == pygame.KEYDOWN:
 			if event.key == pygame.K_RETURN:
 				activity = 2
 	pygame.draw.rect(screen, (50, 50, 50), pygame.Rect(20, 20, w-40, h-40))
 	for a in range(1,9):
 		render('text',text=langpack[6+a],arg=((30, 40+(20*(a-1))),forepallete))
+#tmp!!!!
+msgx=0
+messagetime=0
+def msgchk():
+	global msgx,messagetime,message
+	if not 'messagetime' in globals():
+		messagetime = time.time()+5
+	mv=2*(fps//10)
+	if not time.time()>=messagetime and not msgx>199:
+		msgx+=mv
+	elif time.time()>=messagetime and not msgx<=0:
+		msgx-=mv
+	for a in range(1,2):
+		pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(w-msgx,20+(5*(a-1)), 220, 50),border_radius=10)
+		pygame.draw.rect(screen, (50, 50, 50), pygame.Rect(w-msgx,20+(5*(a-1)), 420, 50),2,border_radius=10)
+		if msgx>20:
+			render('text',text=message[:50],arg=((w-msgx+20, 40+(5*(a-1))),forepallete))
 def main():
 		global activity,screen,button,buttons,BUTTON_COLOR,SELECTED_BUTTON_BORDER_COLOR,SELECTED_BUTTON_BORDER_WIDTH,BUTTON_TEXT_OFFSET,BUTTON_TEXT_SIZE,BUTTON_TEXT_COLOR,debugmode,messagetime,aitime
 		update=time.time()
-		allowed=[1,3,6,9]
+		allowed=[1,3,6,9,4,7,8]
 		fullscreenchk()
-		for a in os.listdir('mods/'):
-			exec(open('mods/'+str(a)).read())
 		if activity in allowed:
 			clear((20,20,20))
 #			blocksplash()
@@ -864,21 +910,15 @@ def main():
 			deleteworld()
 		elif activity == 9:
 			progressmenu()
+		msgchk()
 
 		if debugmode:
 			render('text',text='FPS:'+str(fps),arg=((w-100, 23),forepallete))
-			render('text',text=str(int((time.time()-update)/0.001))+'ms',arg=((w-100, 53),forepallete))
+			render('text',text=str(int((time.time()-update)/0.001))+'ms',arg=((w-100, 43),forepallete))
 			render('text',text=str(cbytes(memspace()))+' Out of '+cbytes(maxmem),arg=((25, h-70),forepallete))
 			pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(0, 0, w, 10))
 			struct = ((fps)/limitfps)*w
 			pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(0, 0, struct, 10))
-		if len(message) > 0:
-			if not 'messagetime' in globals():
-				messagetime = time.time()+5
-			elif not time.time() > messagetime:
-				pygame.draw.rect(screen, (100, 100, 150), pygame.Rect(w-200,20, 200, 100))
-				pygame.draw.rect(screen, (100, 100, 200), pygame.Rect(w-200,20, 200, 100),2)
-				render('text',text=message[:50],arg=((2-180, 23),forepallete))
 		pause(limitfps)
 		if "-debug" in sys.argv:
 			tmp=[]
@@ -977,6 +1017,7 @@ def load_chunks():
 	else:
 		buffer.fill((0,150,0))
 	# Iterate over visible chunks and draw them
+
 	for b in loaded:	
 		ama+=1
 		chunk_x = playersize * b[0] + playersize * x
@@ -1005,28 +1046,42 @@ def crash(text):
 		buttont=('Continue','Exit',)
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
-				exit()
+				stopnow()
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if button==1:
 					bypass=1
 				elif button==2:
-					exit()
+					stopnow()
 		pygame.draw.rect(screen,(40,40,40),pygame.Rect(w//4,h//4,w//2,h//2),border_radius=5)
 		pygame.draw.rect(screen,(20,20,20),pygame.Rect(w//4+3,h//4+33,w//2-6,h//2-36))
 		button=menu_draw(buttonm,text=buttont)
 		render('text',text=langpack[20],arg=((w//4+8,h//4+8),forepallete))
 		render('text',text=text[:int(60*upscale)],arg=((w//4+15,h//4+48),forepallete))
 		pygame.display.update()
-def render(type,arg=(0,0) , text='N/A'):
+def render(type,arg=(0,0) , text='N/A',bordercolor=forepallete):
 #	print(type,arg,text)
 	try:
 		if type=='text':
 			screen.blit(font.render(text, True, arg[1]), arg[0])
+		elif type=='rect':
+#			print(arg[0][0],arg[0][1],arg[0][2],arg[0][3])
+			pygame.draw.rect(screen,arg[1],pygame.Rect(arg[0][0],arg[0][1],arg[0][2],arg[0][3]))
+			if arg[2]:
+				pygame.draw.rect(screen,bordercolor,pygame.Rect(arg[0][0],arg[0][1],arg[0][2],arg[0][3]),2)
+		elif type=='header':
+			pygame.draw.rect(screen, (50,50,50), pygame.Rect(0,-40,w,100),border_radius=20)
 		else:
 			crash('Render unsupported Type')
 	except Exception as error:
 		crash(error)
-
+def keychk():
+	for a in pygame.event.get():
+		if a.type==pygame.KEYDOWN or a.type==pygame.KEYUP:
+			key=a.key
+		else:
+			key=None
+		return a,a.type,key
+	return None,None,None
 
 def testmode():
 	for a in range(1,10):
@@ -1053,7 +1108,24 @@ def testmode():
 		pygame.display.flip()
 		time.sleep(1)
 	print('All Good!')
-	exit()
+	stopnow()
+def netcall(str):
+	global netresult,netqueue
+	netqueue=str
+	if not netresult!='':
+		netresult=''
+	return netresult
+def netthread():
+	global netqueue,netresult
+	print('Started NetThread')
+	while True:
+		if stop:
+			break
+		if len(netqueue)>0:
+			print(netqueue)
+			netresult=urllib.request.urlopen(netqueue).read()
+			netqueue=''
+		time.sleep(1/60)
 chat_messages = []
 chat_box_width, chat_box_height = 600, 200
 chat_box_x = (screenw - chat_box_width) // 2
@@ -1064,6 +1136,9 @@ WHITE = (255, 255, 255)
 if __name__ == "__main__":
 #	threading.Thread(target=repaint).start()
 	try:
+		for a in os.listdir('mods/'):
+			exec(open('mods/'+str(a)).read())
+		threading.Thread(target=netthread).start()
 		while True:
 			try:
 				if "-testmode" in sys.argv:
