@@ -4,12 +4,12 @@ import pygame,os,time,sys,threading,urllib.request
 nline='\n'
 axe=0
 gamename='TinyWorld'
-gamever='2.5.0821.0.dev'
+gamever='2.5.0903.0.dev'
 gameupdateurl='N/A'
 gameauthor='Pxki Games'
 print('Starting Game...')
 upscale=1
-limitfps=60
+limitfps=1000
 maxmem=1024*1024
 sfps=0
 debugmode=True
@@ -18,7 +18,6 @@ if upscale<.9:
 	exit()
 upscale=int(round(upscale))
 introtiming=1/160
-fullscreen=False
 musictime=0
 x=0
 y=0
@@ -38,6 +37,7 @@ def music():
 			musictime=time.time()+13
 			pygame.mixer.music.load(A)
 			pygame.mixer.music.play()
+
 pallete=0,0,0
 forepallete=255,255,255
 blue=0,0,255
@@ -52,11 +52,20 @@ saves=[]
 savename=str(random.randint(11111,12345))+'.tw'
 netqueue=''
 netresult=''
+datapath='./data/'
+if not os.path.isdir(datapath):
+    os.mkdir(datapath)
+    print('Created',datapath.replace('./','').replace('/',''))
+settingskeystore=[False,False,False]
+keystoretmp=[]
+if os.path.isfile(datapath+'settings.db'):
+    if not len(open(datapath+'settings.db').read().rstrip("\n").split("\n"))<4:
+	    settingskeystore=open(datapath+'settings.db').read().rstrip("\n").split("\n")
 print('Setting Language...')
 lang='en'
 print('Set Lang to '+lang)
 print('This will be Used Later in the coming Updates')
-langpack=open('data/languages/en.lang').read().rstrip("\n").split(';')
+langpack=open(datapath+'languages/en.lang').read().rstrip("\n").split(';')
 print('index '+str(len(langpack)-1))
 if os.path.isdir('Saves'):
 	os.rename('Saves',gamepath)
@@ -84,12 +93,12 @@ def placeblock(posx,posy,block):
 			break
 	if place:
 		chunks.append((posx,posy,block))
-def memspace():
-  if len(str(globals())) >= maxmem:
-    print('Memory Overload !\nThis will be sent to the Developer! :)')
-    stopnow()
-  else:
-    return len(str(globals()))
+#def memspace():
+#  if len(str(globals())) >= maxmem:
+#    print('Memory Overload !\nThis will be sent to the Developer! :)')
+#    stopnow()
+#  else:
+#    return len(str(globals()))
 def cbytes(size):
     units = ['B', 'KB', 'MB', 'GB', 'TB']
     unit_index = 0
@@ -126,16 +135,16 @@ def game():
 				if tmpsize>playersize:x-=zoom;y-=zoom;playersize+=zoom
 				elif tmpsize<playersize:x+=zoom;y+=zoom;playersize-=zoom
 			playerpos=playercheck()
-			if botmode:ais=[(aix,aiy)]
+			if settingskeystore[1]:ais=[(aix,aiy)]
 			else:ais=[]
 			for a in ais:aipot=playersize*a[0]+playersize*x,playersize*a[1]+playersize*y
 			if health>79:healthstatus=0,255,0
 			elif health>30:healthstatus=255,255,0
 			elif health<20:healthstatus=255,0,0
 			if health<1:message='You have died';activity=1
-			if optimize:
+			if settingskeystore[2]:
 				if len(chunks)>2999:chunks=chunks[5:]
-			if botmode:
+			if settingskeystore[1]:
 				if time.time()>aitime:
 					aiblock=2;aitime=time.time()+aitimestep;aiy+=1
 					if aitrigger>3:aitrigger=1
@@ -281,27 +290,30 @@ def game():
 			pygame.draw.rect(screen, forepallete, pygame.Rect((playersize * playerpos[0] + playersize * x),playersize * playerpos[1] + playersize * y,playersize,playersize),2)
 			render('text',text='Note: This will be changed Later',arg=((30,h-40),forepallete))
 def settingspage():
-  global button,optimize,botmode,fullscreen,activity,screen,firstcom	
+  global button,settingskeystore,activity,screen,firstcom	
+  #settingskeystore[2],settingskeystore[1],fullscreen
   render('header')
   render('rect',arg=((-5,titlepos[1]+40,w+10,h-120),(0,0,0),True),bordercolor=forepallete)
   render('text',text=gamename + ' - '+langpack[21],arg=(titlepos,forepallete))
-  setbutton=menu_draw((pygame.Rect(titlepos[0], titlepos[1]+55, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+100, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+145, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+190, 220, button_size_height//1.5),pygame.Rect(10, h-45, w-20, button_size_height/1.5),),((langpack[22] if optimize else langpack[23])+' '+langpack[24],(langpack[22] if botmode else langpack[23])+' '+langpack[25],(langpack[22] if fullscreen else langpack[23]) + ' '+langpack[26],'Notification Test','<--'))
+  setbutton=menu_draw((pygame.Rect(titlepos[0], titlepos[1]+55, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+100, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+145, 220, button_size_height//1.5),pygame.Rect(titlepos[0], titlepos[1]+190, 220, button_size_height//1.5),pygame.Rect(10, h-45, w-20, button_size_height/1.5),),((langpack[23] if settingskeystore[2] else langpack[22])+' '+langpack[24],(langpack[23] if settingskeystore[1] else langpack[22])+' '+langpack[25],(langpack[23] if settingskeystore[0] else langpack[22]) + ' '+langpack[26],'Notification Test','<--'))
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
       stopnow()
     if event.type == pygame.MOUSEBUTTONDOWN: 
+        print(settingskeystore)
+        print(keystoretmp)
         if setbutton == 1:
-          optimize = not optimize
+          settingskeystore[2] = not settingskeystore[2]
         elif setbutton == 2:
-          botmode = not botmode
+          settingskeystore[1] = not settingskeystore[1]
         elif setbutton == 3:
-          fullscreen = not fullscreen
+          settingskeystore[0] = not settingskeystore[0]
           firstcom=False
           regen()
         elif setbutton == 4:
           global messagetime,message
           messagetime = time.time() + 5
-          message='this is a test'
+          message='EXAMPPLE MESSAGE'
         elif setbutton == 5:
           activity = 1
 
@@ -312,8 +324,8 @@ def settingspage():
 #  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 - 20, w - 40, 40))
 #  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 + 40, w - 40, 40))
 #  pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(20, h // 2 + 100, w - 40, 40))
-#  write('Optimize Mode: ' + ('Enabled' if optimize else 'Disabled'), (25, h // 2 - 68), 25, (255, 255, 255))
-#  write('Builder Bots: ' + ('Enabled' if botmode else 'Disabled'), (25, h // 2 - 8), 25, (255, 255, 255))
+#  write('settingskeystore[2] Mode: ' + ('Enabled' if settingskeystore[2] else 'Disabled'), (25, h // 2 - 68), 25, (255, 255, 255))
+#  write('Builder Bots: ' + ('Enabled' if settingskeystore[1] else 'Disabled'), (25, h // 2 - 8), 25, (255, 255, 255))
 #  write('Fullscreen: ' + ('Enabled' if fullscreen else 'Disabled'), (25, h // 2 + 52), 25, (255, 255, 255))
 #  write('Exit Menu', (25, h // 2 + 110), 25, (255, 255, 255))
 #  pygame.draw.rect(screen, (255, 255, 255), pygame.Rect(20, h // 2 - 80 + 60 * (button - 1), w - 40, 40), 2)
@@ -329,15 +341,18 @@ fpstime=time.time()
 fpstmp=0
 fps=0
 quickness=1
-def pause(ms):
+def limiter():
 	global fpstime,fpstmp,sfps,fps
-	if time.time()-fpstime>1/quickness:
-		fps=int(fpstmp)
-		fpstmp=0
-		fpstime=time.time()
-	else:
-		fpstmp+=1*quickness
-	clock.tick(limitfps)
+	while True:
+		if stop:
+			break
+		if time.time()-fpstime>1/quickness:
+			fps=int(fpstmp)
+			fpstmp=0
+			fpstime=time.time()
+		else:
+			fpstmp+=1*quickness
+		time.sleep(1/limitfps)
 pygame.init()
 font = pygame.font.SysFont(None, 24)
 clock=pygame.time.Clock()
@@ -453,14 +468,7 @@ left=False
 right=False
 placemode=False
 minemode=False
-optimize=False
-botmode=False
 worldtype=2
-if not os.path.isfile('setup.dat'):
-	x=open('setup.dat','w')
-	x.write("""fullscreen=0
-buildbots=0
-optimize=1""")
 def gamesaves():
 	global savespos,savestext
 	saves=os.listdir(gamepath)
@@ -475,7 +483,7 @@ def gamesaves():
 firstcom=False
 def fullscreenchk():
 	global w,h,screenw,screenh,screen,mmenu,button_size_width,wmenu,wtext,buffer,menuoverlay,firstcom
-	if not fullscreen:
+	if not settingskeystore[0]:
 		if not firstcom:
 			w=640
 			h=480
@@ -490,7 +498,7 @@ def fullscreenchk():
 	downscale=1
 	flags=pygame.DOUBLEBUF|pygame.RESIZABLE|pygame.HWSURFACE
 	bit=24
-	if fullscreen:
+	if settingskeystore[0]:
 		if not firstcom:
 			screen=pygame.display.set_mode((0,0),pygame.FULLSCREEN|flags,bit)
 	else:
@@ -597,17 +605,16 @@ def createworld():
 					worldtype+=1
 def deleteworld():
 	global activity, button,selected_save
-	tmp = font.render(langpack[40]+' '+str(savestext[selected_save-1])+'?', True, (255, 255, 255))
+	tmp = font.render(langpack[32]+' '+str(savestext[selected_save-1])+'?', True, (255, 255, 255))
 	centertext = tmp.get_rect(center=pygame.Rect(0,((h - button_size_height) // 2)+(button_size_height-20),w,20).center)
 	screen.blit(tmp, centertext)
 	floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+100), button_size_width, button_size_height),),text=('Delete!','Nwooo'))
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
-			pygame.quit()
-			sys.stopnow()
+			stopnow()
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			if floorbuttons == 1:
-				os.remove(gamepath+str(savestext[selected_save-1].replace(' ','_')))
+				os.remove(gamepath+str(savestext[selected_save-1].replace(' ','_')+'.tw'))
 				activity=6
 				gamesaves()
 			elif floorbuttons == 2:
@@ -789,6 +796,7 @@ def mainmenu():
 #	for a in range(1,crazyness+2):
 #		shake(gamename,(40+(a*5),60+(a*5)))
 	render('text',text=gamename,arg=(titlepos,forepallete))
+	render('text',text=gamever,arg=((titlepos[0],titlepos[1]+25),forepallete))
 	#render('text',text='BUTTON:'+str(menubutton),arg=((titlepos[0],titlepos[1]+30),forepallete))
 	if crazyness<4:
 		if crazyness>0:
@@ -806,7 +814,7 @@ def onlinemode():
 	global activity
 	render('text',text=gamename+' '+langpack[5],arg=(titlepos,forepallete))
 	pygame.draw.rect(screen, forepallete, pygame.Rect(40,80,w-80,h-160))
-	render('text',text=netcall('http://10.1.52.1'),arg=((45,85),(0,0,0)))
+	render('text',text=netcall('localhost-\x20'),arg=((45,85),(0,0,0)))
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			stopnow()
@@ -872,7 +880,8 @@ def msgchk():
 	global msgx,messagetime,message
 	if not 'messagetime' in globals():
 		messagetime = time.time()+5
-	mv=2*(fps//10)
+	#mv=2*(fps//10)
+	mv=1
 	if not time.time()>=messagetime and not msgx>199:
 		msgx+=mv
 	elif time.time()>=messagetime and not msgx<=0:
@@ -883,7 +892,14 @@ def msgchk():
 		if msgx>20:
 			render('text',text=message[:50],arg=((w-msgx+20, 40+(5*(a-1))),forepallete))
 def main():
-		global activity,screen,button,buttons,BUTTON_COLOR,SELECTED_BUTTON_BORDER_COLOR,SELECTED_BUTTON_BORDER_WIDTH,BUTTON_TEXT_OFFSET,BUTTON_TEXT_SIZE,BUTTON_TEXT_COLOR,debugmode,messagetime,aitime
+		global activity,screen,keystoretmp,settingskeystore,button,buttons,BUTTON_COLOR,SELECTED_BUTTON_BORDER_COLOR,SELECTED_BUTTON_BORDER_WIDTH,BUTTON_TEXT_OFFSET,BUTTON_TEXT_SIZE,BUTTON_TEXT_COLOR,debugmode,messagetime,aitime
+		if keystoretmp!=settingskeystore:
+			print('! Changed Key Store')
+			keystoretmp=settingskeystore
+			tmp=open(datapath+'settings.db','w')
+			for a in keystoretmp:
+				tmp.write(str(a)+'\n')
+			tmp.close()
 		update=time.time()
 		allowed=[1,3,6,9,4,7,8]
 		fullscreenchk()
@@ -914,12 +930,11 @@ def main():
 
 		if debugmode:
 			render('text',text='FPS:'+str(fps),arg=((w-100, 23),forepallete))
-			render('text',text=str(int((time.time()-update)/0.001))+'ms',arg=((w-100, 43),forepallete))
-			render('text',text=str(cbytes(memspace()))+' Out of '+cbytes(maxmem),arg=((25, h-70),forepallete))
+			render('text',text=str((time.time()-update)/0.001)[:4]+'ms',arg=((w-100, 43),forepallete))
+#			render('text',text=str(cbytes(memspace()))+' Out of '+cbytes(maxmem),arg=((25, h-70),forepallete))
 			pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(0, 0, w, 10))
 			struct = ((fps)/limitfps)*w
 			pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(0, 0, struct, 10))
-		pause(limitfps)
 		if "-debug" in sys.argv:
 			tmp=[]
 			for a in range(1,10):
@@ -927,6 +942,7 @@ def main():
 			button=menu_draw((tmp),text=('Home','Gameplay','Settings','Online','Tutorial','Worlds','CreateM','DeleteM','Progress'),selected_button=activity)
 			if button!=0:
 				activity=button
+		clock.tick(limitfps//2)
 		pygame.display.update()
 def repaint():
 	while True:
@@ -1017,9 +1033,18 @@ def load_chunks():
 	else:
 		buffer.fill((0,150,0))
 	# Iterate over visible chunks and draw them
+	playerpos2=playercheck()
+	if 0==1:
+		for a in range(1,(w//int(playersize))+1):
+			for b in range(1,(h//int(playersize))+1):
+				random.seed(playerpos2[0]*playerpos2[1]*a*b)
+				tmp=random.random()
+				if tmp>=0.5:
+					pygame.draw.rect(buffer, (blockcolor[5]), pygame.Rect((a-1)*playersize, (b-1)*playersize, playersize, playersize))			
 
 	for b in loaded:	
 		ama+=1
+		
 		chunk_x = playersize * b[0] + playersize * x
 		chunk_y = playersize * b[1] + playersize * y
 		rect = pygame.Rect(chunk_x, chunk_y, playersize + 1, playersize + 1)
@@ -1028,7 +1053,7 @@ def load_chunks():
 		else:
 			color = (255, 255, 0) if len(b) > 3 else (255, 255, 255)
 			pygame.draw.rect(buffer, color, rect, 1)
-		if botmode:
+		if settingskeystore[1]:
 			aipot_rect = pygame.Rect(aipot[0], aipot[1], playersize, playersize)
 			pygame.draw.rect(screen, (0, 0, 255), aipot_rect)
 			pygame.draw.rect(screen, (255, 255, 255), aipot_rect, 2)
@@ -1119,11 +1144,15 @@ def netthread():
 	global netqueue,netresult
 	print('Started NetThread')
 	while True:
-		if stop:
-			break
-		if len(netqueue)>0:
-			print(netqueue)
-			netresult=urllib.request.urlopen(netqueue).read()
+		try:
+			if stop:
+				break
+			if len(netqueue)>0:
+				print(netqueue)
+				netresult=urllib.request.urlopen(netqueue).read()
+				netqueue=''
+		except Exception as error:
+			print(time.time(),': [NetThread]',error)
 			netqueue=''
 		time.sleep(1/60)
 chat_messages = []
@@ -1139,6 +1168,7 @@ if __name__ == "__main__":
 		for a in os.listdir('mods/'):
 			exec(open('mods/'+str(a)).read())
 		threading.Thread(target=netthread).start()
+		threading.Thread(target=limiter).start()
 		while True:
 			try:
 				if "-testmode" in sys.argv:
