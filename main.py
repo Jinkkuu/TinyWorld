@@ -4,7 +4,7 @@ import pygame,os,time,sys,threading,urllib.request
 nline='\n'
 axe=0
 gamename='TinyWorld'
-gamever='2.5.0903.0.dev'
+gamever='2.5.0904.0.dev'
 gameupdateurl='N/A'
 gameauthor='Pxki Games'
 print('Starting Game...')
@@ -57,10 +57,12 @@ if not os.path.isdir(datapath):
     os.mkdir(datapath)
     print('Created',datapath.replace('./','').replace('/',''))
 settingskeystore=[False,False,False]
-keystoretmp=[]
 if os.path.isfile(datapath+'settings.db'):
-    if not len(open(datapath+'settings.db').read().rstrip("\n").split("\n"))<4:
-	    settingskeystore=open(datapath+'settings.db').read().rstrip("\n").split("\n")
+    if not len(open(datapath+'settings.db').read().rstrip("\n").split("\n"))<3:
+        settingskeystore=open(datapath+'settings.db').read().rstrip("\n").split("\n")
+        for a in range(len(settingskeystore)):
+            settingskeystore[a]=eval(settingskeystore[a])
+            	
 print('Setting Language...')
 lang='en'
 print('Set Lang to '+lang)
@@ -289,8 +291,17 @@ def game():
 
 			pygame.draw.rect(screen, forepallete, pygame.Rect((playersize * playerpos[0] + playersize * x),playersize * playerpos[1] + playersize * y,playersize,playersize),2)
 			render('text',text='Note: This will be changed Later',arg=((30,h-40),forepallete))
+if os.path.isfile(datapath+'game-dev.py'):
+    print('Using External Game File')
+    exec(open(datapath+'game-dev.py').read())
 def settingspage():
-  global button,settingskeystore,activity,screen,firstcom	
+  global button,settingskeystore,activity,screen,firstcom,change
+  if change:
+    tmp=open(datapath+'settings.db','w')
+    for a in settingskeystore:
+        tmp.write(str(a)+'\n')
+    tmp.close()
+    change=False
   #settingskeystore[2],settingskeystore[1],fullscreen
   render('header')
   render('rect',arg=((-5,titlepos[1]+40,w+10,h-120),(0,0,0),True),bordercolor=forepallete)
@@ -300,14 +311,15 @@ def settingspage():
     if event.type == pygame.QUIT:
       stopnow()
     if event.type == pygame.MOUSEBUTTONDOWN: 
-        print(settingskeystore)
-        print(keystoretmp)
         if setbutton == 1:
           settingskeystore[2] = not settingskeystore[2]
+          change=True
         elif setbutton == 2:
           settingskeystore[1] = not settingskeystore[1]
+          change=True
         elif setbutton == 3:
           settingskeystore[0] = not settingskeystore[0]
+          change=True
           firstcom=False
           regen()
         elif setbutton == 4:
@@ -343,16 +355,12 @@ fps=0
 quickness=1
 def limiter():
 	global fpstime,fpstmp,sfps,fps
-	while True:
-		if stop:
-			break
-		if time.time()-fpstime>1/quickness:
-			fps=int(fpstmp)
-			fpstmp=0
-			fpstime=time.time()
-		else:
-			fpstmp+=1*quickness
-		time.sleep(1/limitfps)
+	if time.time()-fpstime>1/quickness:
+		fps=int(fpstmp)
+		fpstmp=0
+		fpstime=time.time()
+	else:
+		fpstmp+=1*quickness
 pygame.init()
 font = pygame.font.SysFont(None, 24)
 clock=pygame.time.Clock()
@@ -736,7 +744,7 @@ speed = 1
 maxspeed = 3
 def blocksplash():
 	global blockmainmenu, blocksplashid,speed
-
+	
 	if not hideblocks:
 		block_rect = pygame.Rect(0, 0, splashsize + border, splashsize + border)
 		speed = min(speed + 1, maxspeed)
@@ -876,6 +884,7 @@ def tutorial():
 #tmp!!!!
 msgx=0
 messagetime=0
+change=False
 def msgchk():
 	global msgx,messagetime,message
 	if not 'messagetime' in globals():
@@ -892,58 +901,48 @@ def msgchk():
 		if msgx>20:
 			render('text',text=message[:50],arg=((w-msgx+20, 40+(5*(a-1))),forepallete))
 def main():
-		global activity,screen,keystoretmp,settingskeystore,button,buttons,BUTTON_COLOR,SELECTED_BUTTON_BORDER_COLOR,SELECTED_BUTTON_BORDER_WIDTH,BUTTON_TEXT_OFFSET,BUTTON_TEXT_SIZE,BUTTON_TEXT_COLOR,debugmode,messagetime,aitime
-		if keystoretmp!=settingskeystore:
-			print('! Changed Key Store')
-			keystoretmp=settingskeystore
-			tmp=open(datapath+'settings.db','w')
-			for a in keystoretmp:
-				tmp.write(str(a)+'\n')
-			tmp.close()
-		update=time.time()
-		allowed=[1,3,6,9,4,7,8]
-		fullscreenchk()
-		if activity in allowed:
-			clear((20,20,20))
+	global activity,screen,settingskeystore,button,buttons,BUTTON_COLOR,SELECTED_BUTTON_BORDER_COLOR,SELECTED_BUTTON_BORDER_WIDTH,BUTTON_TEXT_OFFSET,BUTTON_TEXT_SIZE,BUTTON_TEXT_COLOR,debugmode,messagetime,aitime
+	limiter()
+	update=time.time()
+	allowed=[1,3,6,9,4,7,8]
+	fullscreenchk()
+	if activity in allowed:
+		clear((20,20,20))
 #			blocksplash()
-		if activity == 0:
-			activity = 1
-		elif activity == 1:
-			mainmenu()
-		elif activity == 2:
-			game()
-		elif activity == 3:
-			settingspage()
-		elif activity == 4:
-			onlinemode()
-		elif activity == 5:
-			tutorial()
-		elif activity == 6:
-			worldmenu()
-		elif activity == 7:
-			createworld()
-		elif activity == 8:
-			deleteworld()
-		elif activity == 9:
-			progressmenu()
-		msgchk()
-
-		if debugmode:
-			render('text',text='FPS:'+str(fps),arg=((w-100, 23),forepallete))
-			render('text',text=str((time.time()-update)/0.001)[:4]+'ms',arg=((w-100, 43),forepallete))
+	if activity == 0:
+		activity = 1
+	elif activity == 1:
+		mainmenu()
+	elif activity == 2:
+		game()
+	elif activity == 3:
+		settingspage()
+	elif activity == 4:
+		onlinemode()
+	elif activity == 5:
+		tutorial()
+	elif activity == 6:
+		worldmenu()
+	elif activity == 7:
+		createworld()
+	elif activity == 8:
+		deleteworld()
+	elif activity == 9:
+		progressmenu()
+	msgchk()
+	if debugmode:
+		render('text',text='FPS:'+str(fps),arg=((w-100, 23),forepallete))
+		render('text',text=str((time.time()-update)/0.001)[:4]+'ms',arg=((w-100, 43),forepallete))
 #			render('text',text=str(cbytes(memspace()))+' Out of '+cbytes(maxmem),arg=((25, h-70),forepallete))
-			pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(0, 0, w, 10))
-			struct = ((fps)/limitfps)*w
-			pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(0, 0, struct, 10))
-		if "-debug" in sys.argv:
-			tmp=[]
-			for a in range(1,10):
-				tmp.append(pygame.Rect(w-130,30+(40*a),100,30),)
-			button=menu_draw((tmp),text=('Home','Gameplay','Settings','Online','Tutorial','Worlds','CreateM','DeleteM','Progress'),selected_button=activity)
-			if button!=0:
-				activity=button
-		clock.tick(limitfps//2)
-		pygame.display.update()
+		pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(0, 0, w, 10))
+		struct = ((fps)/limitfps)*w
+		pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(0, 0, struct, 10))
+	if "-debug" in sys.argv:
+		tmp=[pygame.Rect(w-130,30+(40),100,30),pygame.Rect(w-130,30+(40*2),100,30),pygame.Rect(w-130,30+(40*3),100,30),pygame.Rect(w-130,30+(40*4),100,30),pygame.Rect(w-130,30+(40*5),100,30),pygame.Rect(w-130,30+(40*6),100,30),pygame.Rect(w-130,30+(40*7),100,30),pygame.Rect(w-130,30+(40*8),100,30),pygame.Rect(w-130,30+(40*9),100,30),]
+		button=menu_draw((tmp),text=('Home','Gameplay','Settings','Online','Tutorial','Worlds','CreateM','DeleteM','Progress'),selected_button=activity)
+		if button!=0:
+			activity=button
+	pygame.display.update()
 def repaint():
 	while True:
 		pygame.display.flip()
@@ -1168,7 +1167,6 @@ if __name__ == "__main__":
 		for a in os.listdir('mods/'):
 			exec(open('mods/'+str(a)).read())
 		threading.Thread(target=netthread).start()
-		threading.Thread(target=limiter).start()
 		while True:
 			try:
 				if "-testmode" in sys.argv:
