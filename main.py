@@ -364,7 +364,11 @@ def reload():
         for c in tmp:
             chunks.append(c) 
             
-    t=time.time()+2;tok=0;xxx=time.time()+tok;fun=random.randint(1,len(messages))-1;fop=50
+    t=time.time()+2
+    tok=0
+    xxx=time.time()+tok
+    fun=random.randint(1,len(messages))-1
+    fop=50
 appear=False
 targetmode=False
 minemode=False
