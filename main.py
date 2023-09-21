@@ -960,7 +960,7 @@ def netthread():
                 break
             if len(netqueue)>0:
                 print(netqueue)
-                netresult=urllib.request.urlopen(netqueue).read()
+                #netresult=urllib.request.urlopen(netqueue).read()
                 netqueue=''
         except Exception as error:
             print(time.time(),': [NetThread]',error)
