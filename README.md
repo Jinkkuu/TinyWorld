@@ -1,5 +1,5 @@
-# TinyWorld v3.0Dev
-This is the Upcoming Release of TinyWorld
+# TinyWorld v3.0 (Experimental Version)
+Welcome to Tinyworld where you can build and survive!
 ## Status
 [![CodeFactor](https://www.codefactor.io/repository/github/pxkidoescoding/tinyworld/badge)](https://www.codefactor.io/repository/github/pxkidoescoding/tinyworld)
 ## Goals:
