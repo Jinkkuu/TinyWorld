@@ -331,7 +331,10 @@ def respawn():
     for a in range(1,1000):place=False;pos=random.randint(1,x+100)//2,random.randint(1,y+100)//2;foodpos.append((pos[0],pos[1],random.randint(1,2)))
 def reload():
     global aix,aiy,aipos,foodcount,health,worldtype,seed,x,y,radius,playersize,foodpos,gamemode,aitrigger,collide,aitime,aipot,wmenu,chunks,multipos,multinames
-    x=0;y=0;aix=0;aiy=0;health=100;gamemode=gamemodes[0]
+    x=0
+    y=0
+    health=100
+    gamemode=gamemodes[0]
     if os.path.isfile(gamepath+savename):
         clear((0, 0, 0))
         filesize=os.stat(gamepath+savename).st_size
