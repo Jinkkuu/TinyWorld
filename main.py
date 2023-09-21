@@ -724,7 +724,8 @@ def onlinemode():
     global activity, button,textbox_active,textbox_text,savename,worldtype
     render('header')
     render('text',text=gamename+' - '+langpack[5],arg=(titlepos,forepallete))
-    floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+80), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+80), button_size_width//2-5, button_size_height),),text=(langpack[43],langpack[40],))
+    render('text',text='Fake Menu',arg=((titlepos[0],titlepos[1]+45),(255,255,0)))
+    floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),),text=(langpack[43],langpack[40],))
     render('rect',arg=(((w - button_size_width) // 2, ((h - button_size_height) // 2) + (button_size_height - 60),button_size_width, 60),(0,0,0),True),bordercolor=forepallete)
     maxtext=32
     if len(textbox_text)<maxtext:
@@ -732,6 +733,7 @@ def onlinemode():
     else:
         colortext=255,0,0
     render('text',arg=(((w - button_size_width) // 2+10,((h - button_size_height) // 2) + (button_size_height//4)),colortext),text=textbox_text)
+    return 'STOP'
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             stopnow()
@@ -749,7 +751,7 @@ def onlinemode():
         if event.type == pygame.MOUSEBUTTONDOWN:
             if floorbuttons == 1:
                 savename=textbox_text.replace(' ','_')+'.tw'
-                reload()
+                reload(nosave=True)
                 activity=2
                 axe = time.time()
                 aitime = time.time()+aitimestep
@@ -761,7 +763,6 @@ def onlinemode():
                     worldtype=0
                 else:
                     worldtype+=1
-
 def progressmenu():
     global activity
     tmp=0
