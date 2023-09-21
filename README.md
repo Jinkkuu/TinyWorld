@@ -1,6 +1,6 @@
 # TinyWorld v3.0Dev
 This is the Upcoming Release of TinyWorld
-
+[![CodeFactor](https://www.codefactor.io/repository/github/pxkidoescoding/tinyworld/badge)](https://www.codefactor.io/repository/github/pxkidoescoding/tinyworld)
 ## Goals:
 - [x] Fully Remove the Old Code Base
 - [X] Redesign the Main Menu
@@ -8,6 +8,7 @@ This is the Upcoming Release of TinyWorld
 - [X] Allow More than 1 World (Having a World Menu)
 - [ ] Optimized the Code
 - [ ] Adding Multi-player
+- [ ] Improving Code Quality
 - [ ] Published 
 
 
