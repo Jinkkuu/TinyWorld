@@ -745,8 +745,6 @@ def onlinemode():
     textbox()
     floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),),text=(langpack[43],langpack[40],))
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            stopnow()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 activity = 1
@@ -756,6 +754,8 @@ def onlinemode():
                 else:
                     if not len(textbox_text)>maxtext-1:
                         textbox_text += event.unicode
+        if event.type == pygame.QUIT:
+            stopnow()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if floorbuttons == 1:
                 savename=textbox_text.replace(' ','_')+'.tw'
