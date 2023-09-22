@@ -752,10 +752,8 @@ def onlinemode():
                 activity = 1
             if textbox_active:
                 if event.key == pygame.K_BACKSPACE:
-                    # Remove the last character when Backspace is pressed
                     textbox_text = textbox_text[:-1]
                 else:
-                    # Append the entered character to the textbox text
                     if not len(textbox_text)>maxtext-1:
                         textbox_text += event.unicode
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -768,11 +766,6 @@ def onlinemode():
                 
             elif floorbuttons == 2:
                 activity=1
-            elif floorbuttons == 3:
-                if worldtype>=1:
-                    worldtype=0
-                else:
-                    worldtype+=1
 
 def progressmenu():
     global activity
