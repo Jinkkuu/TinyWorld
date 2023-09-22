@@ -4,7 +4,7 @@ import pygame,os,time,sys,threading,urllib.request,socket
 nline='\n'
 axe=0
 gamename='TinyWorld'
-gamever='3.0.0920.0dev'
+gamever='3.0.0921.0dev'
 gameverspl=gamever.split('.')
 #gameminserve=int(gameverspl[0])+((1+float(gameverspl[1]))*float(gameverspl[2]))
 
@@ -499,18 +499,22 @@ titlepos=20, 30
 textbox_text=''
 textbox_active=True
 update=False
-def createworld():
-    global activity, button,textbox_active,textbox_text,savename,worldtype
-    render('header')
-    render('text',text=langpack[31]+' '+langpack[34],arg=(titlepos,forepallete))
-    floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+100), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+100), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+40), button_size_width, button_size_height),),text=(langpack[31],langpack[40],langpack[37]+' '+(langpack[38] if worldtype==0 else langpack[39])))
+bg=(20,20,20)
+def textbox():
+    global maxtext
+    maxtext=24*(w//640+1)
     render('rect',arg=(((w - button_size_width) // 2, ((h - button_size_height) // 2) + (button_size_height - 60),button_size_width, 60),(0,0,0),True),bordercolor=forepallete)
-    maxtext=32
     if len(textbox_text)<maxtext:
         colortext=255,255,255
     else:
         colortext=255,0,0
     render('text',arg=(((w - button_size_width) // 2+10,((h - button_size_height) // 2) + (button_size_height//4)),colortext),text=textbox_text)
+def createworld():
+    global activity, button,textbox_active,textbox_text,savename,worldtype
+    render('header')
+    render('text',text=langpack[31]+' '+langpack[34],arg=(titlepos,forepallete))
+    floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+100), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+100), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+40), button_size_width, button_size_height),),text=(langpack[31],langpack[40],langpack[37]+' '+(langpack[38] if worldtype==0 else langpack[39])))
+    textbox()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             stopnow()
@@ -739,13 +743,7 @@ def onlinemode():
     render('text',text=gamename+' - '+langpack[5],arg=(titlepos,forepallete))
     render('text',text='Fake Menu',arg=((titlepos[0],titlepos[1]+45),(255,255,0)))
     floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),),text=(langpack[43],langpack[40],))
-    render('rect',arg=(((w - button_size_width) // 2, ((h - button_size_height) // 2) + (button_size_height - 60),button_size_width, 60),(0,0,0),True),bordercolor=forepallete)
-    maxtext=32
-    if len(textbox_text)<maxtext:
-        colortext=255,255,255
-    else:
-        colortext=255,0,0
-    render('text',arg=(((w - button_size_width) // 2+10,((h - button_size_height) // 2) + (button_size_height//4)),colortext),text=textbox_text)
+    textbox()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             stopnow()
@@ -846,7 +844,7 @@ def main():
         else:
             ingame=False
         if activity in allowed:
-            clear((20,20,20))
+            clear(bg)
     #			blocksplash()
         if gmode:
             render('rect',arg=((0,h-20,w,20),(255,255,0),False))
@@ -878,9 +876,9 @@ def main():
             pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(0, 0, w, 10))
             struct = ((fps)/limitfps)*w
             pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(0, 0, struct, 10))
-            render('rect',arg=((w-100,73, 40, 30),(0,0,0),True),bordercolor=(255,255,50),borderradius=5)
-            render('rect',arg=((w-93,80, 3, 15),(255,255,50),False),borderradius=5)
-            render('rect',arg=((w-85,92, 10, 3),(255,255,50),False),borderradius=5)
+#            render('rect',arg=((w-100,73, 40, 30),(0,0,0),True),bordercolor=(255,255,50),borderradius=5)
+#            render('rect',arg=((w-93,80, 3, 15),(255,255,50),False),borderradius=5)
+#            render('rect',arg=((w-85,92, 10, 3),(255,255,50),False),borderradius=5)
         if "-debug" in sys.argv:
             tmp=[pygame.Rect(w-130,30+(40),100,30),pygame.Rect(w-130,30+(40*2),100,30),pygame.Rect(w-130,30+(40*3),100,30),pygame.Rect(w-130,30+(40*4),100,30),pygame.Rect(w-130,30+(40*5),100,30),pygame.Rect(w-130,30+(40*6),100,30),pygame.Rect(w-130,30+(40*7),100,30),pygame.Rect(w-130,30+(40*8),100,30),pygame.Rect(w-130,30+(40*9),100,30),]
             button=menu_draw((tmp),text=('Home','Gameplay','Settings','Online','Tutorial','Worlds','CreateM','DeleteM','Progress'),selected_button=activity)
@@ -982,10 +980,6 @@ def netthread():
                 break
             if broadcast:
                 x=multi.recvfrom(4096)
-#            if len(netqueue)>0:
-#                print(netqueue)
-#                netresult=urllib.request.urlopen(netqueue).read()
-#                netqueue=''
         except Exception as error:
             print(time.time(),': [NetThread]',error)
             netqueue=''
