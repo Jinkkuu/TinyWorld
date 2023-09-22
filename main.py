@@ -742,8 +742,8 @@ def onlinemode():
     render('header')
     render('text',text=gamename+' - '+langpack[5],arg=(titlepos,forepallete))
     render('text',text='Fake Menu',arg=((titlepos[0],titlepos[1]+45),(255,255,0)))
-    floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),),text=(langpack[43],langpack[40],))
     textbox()
+    floorbuttons=menu_draw((pygame.Rect((w - button_size_width) // 2, ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),pygame.Rect((w - button_size_width) // 2+(button_size_width//2+5), ((h - button_size_height) // 2)+(button_size_height+20), button_size_width//2-5, button_size_height),),text=(langpack[43],langpack[40],))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             stopnow()
