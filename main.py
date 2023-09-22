@@ -124,9 +124,8 @@ def cbytes(size):
 
     converted_size = f"{size:.2f} {units[unit_index]}"
     return converted_size
-def speedslower():
+def speedslower(fps):
     c=fps
-    print(c)
     if not c==0:
         return c
     else:
@@ -138,7 +137,7 @@ def loader(pos,renderdistancex,renderdistancey):
 def game():
     global up,left,down,right,x,y,placemode,minemode,blockid,playerlist,activity,chunks,multinames,multipos,broadcast
     multinames[0]=username
-    move=3/speedslower()
+    move=3/speedslower(fps)
     pos=-int(x),int(-y)
     multipos[0]=(x,y)
     for event in pygame.event.get():
@@ -359,11 +358,12 @@ def notify(text):
     global message,messagetime
     messagetime = time.time() + 5
     message = text
-def respawn():
-    for a in range(1,1000):place=False;pos=random.randint(1,x+100)//2,random.randint(1,y+100)//2;foodpos.append((pos[0],pos[1],random.randint(1,2)))
 def reload(nosave=False,multiip=''):
     global health,worldtype,seed,x,y,playersize,foodpos,gamemode,aitrigger,collide,aitime,aipot,wmenu,chunks,multipos,multinames,isonline
-    x=0;y=0;aix=0;aiy=0;health=100;gamemode=gamemodes[0]
+    x=0
+    y=0
+    health=100
+    gamemode=gamemodes[0]
     if os.path.isfile(gamepath+savename) and not nosave:
         clear((0, 0, 0))
         filesize=os.stat(gamepath+savename).st_size
@@ -390,11 +390,11 @@ def reload(nosave=False,multiip=''):
         chunks=[]
         for c in tmp:
             chunks.append(c) 
-    else:
-        multi.sendto(b"0,0")
-        tmp=multi.recv(4096)
-        if '[' in tmp and not ']' in tmp:
-            chunks.append(tmp)
+#    else:
+        #multi.sendto(b"0,0")
+        #tmp=multi.recv(4096)
+#        if '[' in tmp and not ']' in tmp:
+#            chunks.append(tmp)
     multipos=[(x,y)]
     multinames=['Loading...']
     multitime=[999*999]        
@@ -820,7 +820,7 @@ def msgchk():
     if not 'messagetime' in globals():
         messagetime = time.time()+5
     #mv=2*(fps//10)
-    mv=120/speedslower()
+    mv=120/speedslower(fps)
     if not time.time()>=messagetime and not msgx>199:
         msgx+=mv
     elif time.time()>=messagetime and not msgx<=0:
@@ -830,7 +830,7 @@ def msgchk():
         if msgx>20:
             render('text',text=message[:50],arg=((w-msgx+20, 40+(5*(a-1))),forepallete))
 def main():
-    global activity,ingame,screen,settingskeystore,button,buttons,BUTTON_COLOR,SELECTED_BUTTON_BORDER_COLOR,SELECTED_BUTTON_BORDER_WIDTH,BUTTON_TEXT_OFFSET,BUTTON_TEXT_SIZE,BUTTON_TEXT_COLOR,debugmode,messagetime,aitime
+    global fps,activity,ingame,screen,settingskeystore,button,buttons,BUTTON_COLOR,SELECTED_BUTTON_BORDER_COLOR,SELECTED_BUTTON_BORDER_WIDTH,BUTTON_TEXT_OFFSET,BUTTON_TEXT_SIZE,BUTTON_TEXT_COLOR,debugmode,messagetime,aitime
     while True:
         if stop:
 #            screen.fill(0)
